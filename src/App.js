@@ -1,11 +1,19 @@
 import React from "react";
-import { onChildAdded, push, ref, set } from "firebase/database";
-import { database } from "./firebase";
-import logo from "./logo.png";
+// import logo from "./logo.png";
 import "./App.css";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import Registration from "./Registration";
+import NewsFeed from "./NewsFeed";
+import Composer from "./Composer";
+import { Routes, Route } from "react-router-dom";
 
+const auth = getAuth();
 // Save the Firebase message folder name as a constant to avoid bugs due to misspelling
-const MESSAGE_FOLDER_NAME = "messages";
 
 class App extends React.Component {
   constructor(props) {
@@ -13,44 +21,72 @@ class App extends React.Component {
     // Initialise empty messages array in state to keep local state in sync with Firebase
     // When Firebase changes, update local state, which will update local UI
     this.state = {
-      messages: [],
+      text: "",
+      timeStamp: Date(),
+      fileInputValue: "",
+      fileInputFile: null,
+      link: "",
+      name: "",
+      likes: 0,
+      showRegistration: true,
+      isLogin: false,
     };
   }
 
-  componentDidMount() {
-    const messagesRef = ref(database, MESSAGE_FOLDER_NAME);
-    // onChildAdded will return data for every child at the reference and every subsequent new child
-    onChildAdded(messagesRef, (data) => {
-      // Add the subsequent child to local component state, initialising a new array to trigger re-render
-      this.setState((state) => ({
-        // Store message key so we can use it as a key in our list items when rendering messages
-        messages: [...state.messages, { key: data.key, val: data.val() }],
-      }));
-    });
-  }
-
-  // Note use of array fields syntax to avoid having to manually bind this method to the class
-  writeData = () => {
-    const messageListRef = ref(database, MESSAGE_FOLDER_NAME);
-    const newMessageRef = push(messageListRef);
-    set(newMessageRef, "abc");
+  signup = (e, email, password) => {
+    e.preventDefault();
+    createUserWithEmailAndPassword(auth, email, password).then(
+      console.log("successfully signed up")
+    );
+  };
+  login = (e, email, password) => {
+    e.preventDefault();
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => this.setState({ showRegistration: false, isLogin: true }))
+      .catch((err) => console.log(err));
   };
 
+  logout = () => {
+    signOut(auth);
+    console.log("logged out");
+    this.setState({ showRegistration: true, isLogin: false });
+  };
   render() {
     // Convert messages in state to message JSX elements to render
-    let messageListItems = this.state.messages.map((message) => (
-      <li key={message.key}>{message.val}</li>
-    ));
     return (
       <div className="App">
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          {/* TODO: Add input field and add text input as messages in Firebase */}
-          <button onClick={this.writeData}>Send</button>
-          <ol>{messageListItems}</ol>
+          {/* testing */}
+          {/* {if true show the registration, else display the instagram page} */}
+          {/* {this.state.showRegistration ? (
+            <div>
+              <Registration
+                handleSignup={this.signup}
+                handleLogin={this.login}
+              />
+            </div>
+          ) : (
+            // this.state.fileInputFile !== null ? (
+            <div>
+              {this.state.isLogin ? <Composer /> : null}
+              <NewsFeed />
+            </div>
+          )} */}
+
+          <Routes>
+            <Route path="/" element={Registration} />
+            <Route path="/composer" element={Composer} />
+            <Route path="/newsfeed" element={NewsFeed} />
+          </Routes>
+
+          <br />
+          <input
+            type="submit"
+            onClick={(e) =>
+              this.logout(e, this.state.email, this.state.password)
+            }
+            value="Logout"
+          />
         </header>
       </div>
     );
